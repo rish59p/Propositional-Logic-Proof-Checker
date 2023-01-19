@@ -1,79 +1,61 @@
 #include <iostream>
 #include <cctype>
 #include <string>
-
+#include <stack>
+#include<queue>
+#include <vector>
+#define SYM '+'||'^'
+#define op(x) (x=='+' || x=='~' || x=='^' || x=='-')
 using namespace std;
 
 string* separator(string statement){
-
-    string* head =  new string[2];
-    int count{0}; int keep{0};
-    if(statement.at(0)=='('){
-        if(statement.at(1)!='('){
-            head[0] = statement.substr(1,1);
-            if(statement.at(3)!='(') head [1] = statement.substr(3,1);
-            else head[1] = statement.substr(4,statement.length()-keep-6);
-        }
-        else{
-            keep=0;
-            while(!((!count)&&(keep))){
-                if (statement.at(keep+1)=='(') count++;
-                else if (statement.at(keep+1)==')') count--;
-                keep++;
+    int count{0};
+    int lopindex{0};
+    string* head =  new string[3];
+    string left;
+    string right;
+    if((statement.length()!=1)&&(statement.at(1)!='~')){
+        for(int j{0};j<statement.length();j++){
+            if(statement.at(j)=='(') count++;
+            else if(statement.at(j)==')') count--;
+            if(count==1 && op(statement.at(j))){
+                lopindex=j;
             }
-            head[0] = statement.substr(2,keep-2); 
-            if(statement.at(keep+2)=='('){
-                head[1] = statement.substr(keep+3,statement.length()-keep-5);
-            }
-            else head[1] = statement.substr(keep+2,1);
         }
-        
+        head[1]=statement.at(lopindex);
+        statement = statement.substr(1,statement.length()-2);
+        head[0]=statement.substr(0,lopindex-1);
+        head[2]=statement.substr(lopindex,statement.length()-lopindex);
     }
-    else if(statement.at(0)=='~'){
-        head[0] = statement;
-        head[1] = "-";
-    }
-    else {
-        head[0] = statement;
-        head[1] = "-";
-    } 
     return head;
 
 }
 
 bool signcheck(string (*table)[4], int k){
     string (*row) = table[k];
-    if((row[1][0]=='-')||(row[1]=="MT")){
-        int a = table[k][2][0]-'0';
-        string statement = table[a-1][0];
-        string pre1 = separator(statement)[0];
-        string pre2 = separator(statement)[1];
-        if(statement.at(1)=='(') statement.erase(0,pre1.length()+3);
-        else statement.erase(0,pre1.length()+1);
-        // debugging : 
-        cout << statement << endl;
-        if(statement.at(1)=='(') statement.erase(1,pre1.length()+3);
-        else statement.erase(1,pre1.length()+1);
-        if(statement[0]=='-') return 1;
-        else return 0;
+    char signinitial;
+    char signchk;
+    if (row[1][1]=='e')
+    {
+        signinitial = row[1][0];
+        int a = row[2][0]-'0';
+        signchk = separator(table[a-1][0])[1][0];
     }
-    else{
-        string statement = row[0];
-        string pre1 = separator(statement)[0];
-        string pre2 = separator(statement)[1];
-        if(statement.at(1)=='(') statement.erase(0,pre1.length()+3);
-        else statement.erase(0,pre1.length()+1);
-        // debugging : 
-        cout << statement << endl;
-        if(statement.at(1)=='(') statement.erase(1,pre1.length()+3);
-        else statement.erase(1,pre1.length()+1);
-        // debugging : 
-        cout << pre1 << " : " << pre2 << endl << statement;
-        if(statement[0]==row[1][0]) return 1;
-        else return 0;
+    else if (row[1][1]=='i'){
+        signinitial = row[1][0];
+        signchk = separator(row[0])[1][0]; 
     }
+    else if (row[1]=="MT"){
+        signinitial = '-';
+        int a = row[2][0]-'0';
+        signchk = separator(table[a-1][0])[1][0];
+    }
+    cout << signchk << " : " << signinitial << endl;
+    if (signchk==signinitial) return 1;
+    else return 0;
 
 }
+
 int andintr (string (*table)[4], int k){
     string statement = table[k][0];
     int a = table[k][2][0]-'0';
@@ -81,22 +63,11 @@ int andintr (string (*table)[4], int k){
     string pre1,pre2;
     string check1 = table[a-1][0];
     string check2 = table[b-1][0];
-    if(check1.at(0)=='('){
-        pre1 = "(" + separator(statement)[0] + ")";
-    }
-    else{
-        pre1 = separator(statement)[0];
-    }
-    if(check2.at(0)=='('){
-        pre2 = "(" + separator(statement)[1] + ")";
-    }
-    else{
-        pre2 = separator(statement)[1];
-    }
+    pre1=separator(statement)[0];
+    pre2=separator(statement)[2];
     /* -FOR DEBUGGING:*/
     cout << pre1 << " : " << check1 << endl;
     cout << pre2 << " : " << check2 << endl;
-
     if (pre1.compare(check1)==0) {
         if(pre2.compare(check2)==0) return 1;
         else  return 0;
@@ -109,8 +80,8 @@ int andel(string (*table)[4], int k, int dex){
     int a = table[k][2][0]-'0';
     string temp = table[a-1][0];
     string check;
-    if(statement.at(0)=='(') check = "("+ (separator(temp)[dex-1])+")";
-    else check = (separator(temp)[dex-1]);
+    if(dex==1) check=separator(temp)[0];
+    else check=separator(temp)[2];
     /* -FOR DEBUGGING:*/
     cout << check << " : " << statement << endl; 
 
@@ -122,8 +93,8 @@ int orintr(string (*table)[4], int k, int dex){
     string check = table[a-1][0];
     string statement = table[k][0];
     string temp;
-    if(check.at(0)=='(') temp = "("+ (separator(statement)[dex-1])+")";
-    else temp = (separator(statement)[dex-1]);
+    if(dex==1) temp = separator(statement)[0];
+    else temp = separator(statement)[2];
     /* -FOR DEBUGGING:*/
     cout << check << " : " << temp << endl;
 
@@ -137,10 +108,8 @@ int implel(string (*table)[4], int k){
     string checkt2 = table[a-1][0];
     string check1 = table[b-1][0];
     string check2,pre;
-    if(check1.at(0)=='(') string pre = "(" + separator(checkt2)[0] + ")";
-    else  pre = separator(checkt2)[0];
-    if(statement.at(0)=='(') string check2 = "(" + separator(checkt2)[1] + ")";
-    else  check2 = separator(checkt2)[1];
+    pre = separator(checkt2)[0];
+    check2 = separator(checkt2)[2];
     /* -FOR DEBUGGING:*/
     cout << checkt2 << endl;
     cout << check1 << " : " << pre << endl;
@@ -156,10 +125,8 @@ int mt(string (*table)[4], int k){
     string checkt2 = table[a-1][0];
     string check1 = table[b-1][0];
     string check2,pre;
-    if(check1.at(1)=='(') pre = "~(" + (separator(checkt2))[1] + ")";
-    else  pre = "~" + (separator(checkt2))[1];
-    if(statement.at(1)=='(') check2 = "~(" + (separator(checkt2))[0] + ")";
-    else  check2 = "~"+ (separator(checkt2))[0];
+    pre = "(~" + (separator(checkt2))[2] + ")";
+    check2 = "(~"+ (separator(checkt2))[0] + ")";
     /* -FOR DEBUGGING:*/
     cout << check1 << " : " << pre << endl;
     cout << check2<< " : " << statement << endl;
@@ -167,8 +134,6 @@ int mt(string (*table)[4], int k){
     if((check1==pre)&&(check2==statement)) return 1;
     else return 0;
 }
-
-
 
 int main()
 {
@@ -210,11 +175,11 @@ int main()
 
     //input fn end
 
-    /* -FOR DEBUGGING:
+    // -FOR DEBUGGING:
     // for(int k{0}; k<n; k++){
     //     cout << table[k][0] << ";" << table[k][1] << ";"<< table[k][2] << ";"<< table[k][3] << endl;
     // }
-    */
+
 
     for(int j{0}; j<n; j++){
         if (table[j][1]=="P") result++;
@@ -223,17 +188,19 @@ int main()
         else if((table[j][1]=="+i2")&&(signcheck(table,j))) result+=orintr(table,j,2);
         else if((table[j][1]=="^e1")&&(signcheck(table,j))) result+=andel(table,j,1);
         else if((table[j][1]=="^e2")&&(signcheck(table,j))) result+=andel(table,j,2);
-        else if((table[j][1]=="-e")) result+=implel(table,j);
-        else if((table[j][1]=="MT")) result+=mt(table,j);
+        else if((table[j][1]=="-e")&&(signcheck(table,j))) result+=implel(table,j);
+        else if((table[j][1]=="MT")&&(signcheck(table,j))) result+=mt(table,j);
     }
     // //FOR DEBUGGING:  
     cout << result;
     //cout << signcheck(table[0]);
 
-    if (result == n) cout << "valid proof";
-    else cout << "invalid proof";
-   
+    if (result == n) cout << "Valid proof";
+    else cout << "Invalid proof";
 
+  
+    //cout << separatornew("(((a^b)+(b^c))^(c+d))")->at(0);
+    
     /* Testing separator function*//*
     cout << separator("p")[0] << " + " << separator("p")[1] << endl;
     cout << separator("~p")[0] << " + " << separator("¬p")[1] << endl;
